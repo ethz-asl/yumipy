@@ -9,33 +9,40 @@ from yumipy import YuMiRobot
 
 import numpy as np
 import rospy
+import threading
 import tf
+
+yumi_lock = threading.Lock()
 
 
 def command_pose_right_callback(pose_msg, args):
     '''Command pose callback for the right arm.'''
     yumi = args[0]
     rigid_transform = ros_pose_to_autolab_core_pose(pose_msg)
-    yumi.right.goto_pose(rigid_transform)
+    with yumi_lock:
+        yumi.right.goto_pose(rigid_transform)
 
 
 def command_pose_left_callback(pose_msg, args):
     '''Command pose callback for the left arm.'''
     yumi = args[0]
     rigid_transform = ros_pose_to_autolab_core_pose(pose_msg)
-    yumi.left.goto_pose(rigid_transform)
+    with yumi_lock:
+        yumi.left.goto_pose(rigid_transform)
 
 
 def command_home_left_callback(empty_msg, args):
     '''Command home callback for the left arm.'''
     yumi = args[0]
-    yumi.left.reset_home()
+    with yumi_lock:
+        yumi.left.reset_home()
 
 
 def command_home_right_callback(empty_msg, args):
     '''Command home callback for the right arm.'''
     yumi = args[0]
-    yumi.right.reset_home()
+    with yumi_lock:
+        yumi.right.reset_home()
 
 
 def ros_pose_to_autolab_core_pose(pose_msg):
@@ -98,14 +105,17 @@ def main():
     rate = rospy.Rate(10)
     while not rospy.is_shutdown():
         ros_now = rospy.Time.now()
-        right_pose = yumi.right.get_pose()
+        with yumi_lock:
+            right_pose = yumi.right.get_pose()
         if right_pose:
+            ros_now = rospy.Time.now()
             pose_right_state_message = autolab_core_pose_to_ros_pose(
                 right_pose.copy(), ros_now, right_end_effector_frame_id)
             pose_right_pub.publish(pose_right_state_message)
-
-        left_pose = yumi.left.get_pose()
+        with yumi_lock:
+            left_pose = yumi.left.get_pose()
         if left_pose:
+            ros_now = rospy.Time.now()
             pose_left_state_message = autolab_core_pose_to_ros_pose(
                 left_pose.copy(), ros_now, left_end_effector_frame_id)
             pose_left_pub.publish(pose_left_state_message)
