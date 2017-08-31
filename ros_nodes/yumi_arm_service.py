@@ -8,9 +8,10 @@ import rospy
 try:
     from yumipy.yumi_arm import *
     from yumipy.srv import *
-except ImportError:
-    raise RuntimeError(
-        "yumi_ros_service unavailable outside of catkin package")
+except ImportError, e:
+    logging.warning(
+        "yumipy not installed as catkin package, yumi over ros will be unavailable{}".
+        format(e))
 
 if __name__ == '__main__':
     # Initialize server. Name is generic as it will be overwritten by launch anyways

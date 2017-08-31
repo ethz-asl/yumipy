@@ -28,10 +28,10 @@ try:
     try:
         from yumipy.srv import *
         ROS_ENABLED = True
-    except ImportError:
+    except ImportError, e:
         logging.warning(
-            "yumipy not installed as catkin package, yumi over ros will be unavailable"
-        )
+            "yumipy not installed as catkin package, yumi over ros will be unavailable{}".
+            format(e))
 except ImportError:
     logging.warning(
         "rospy could not be imported, yumi over ros will be unavailable")

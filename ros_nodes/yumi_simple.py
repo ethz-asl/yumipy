@@ -92,7 +92,10 @@ def main():
         exit()
     pose_right_pub = rospy.Publisher('right/pose', PoseStamped, queue_size=10)
     pose_left_pub = rospy.Publisher('left/pose', PoseStamped, queue_size=10)
-    joint_pub = rospy.Publisher('joint_states', JointState, queue_size=10)
+    # robot_state_pub = rospy.Publisher(
+    #     'joint_states', RobotState, queue_size=10)
+    joint_state_pub = rospy.Publisher(
+        'joint_states', JointState, queue_size=10)
 
     pose_left_sub = rospy.Subscriber("command/left/pose", PoseStamped,
                                      command_pose_left_callback, (yumi, ))
@@ -119,10 +122,24 @@ def main():
             pose_left_state_message = autolab_core_pose_to_ros_pose(
                 left_pose.copy(), ros_now, left_end_effector_frame_id)
             pose_left_pub.publish(pose_left_state_message)
-        # if joint_state_message is None or pose_state_message is None:
-        #     rate.sleep()
-        #     continue
-        # joint_pub.publish(joint_state_message)
+        with yumi_lock:
+            left_joints = yumi.left.get_state()
+            right_joints = yumi.right.get_state()
+        if left_joints and right_joints:
+            joint_names_right = ['yumi_joint_%d_r' % i for i in range(1, 8)]
+            joint_names_left = ['yumi_joint_%d_l' % i for i in range(1, 8)]
+
+            ros_now = rospy.Time.now()
+            robot_state_mesage = RobotState()
+            joint_state_message = JointState()
+            joint_state_message.header.stamp = ros_now
+            joints = right_joints.joints + left_joints.joints
+            # robot_state_mesage.joint_state.name = joint_names_right + joint_names_left
+            # robot_state_mesage.joint_state.position = np.radians(joints)
+            # robot_state_pub.publish(robot_state_mesage)
+            joint_state_message.name = joint_names_right + joint_names_left
+            joint_state_message.position = np.radians(joints)
+            joint_state_pub.publish(joint_state_message)
         rate.sleep()
 
 
